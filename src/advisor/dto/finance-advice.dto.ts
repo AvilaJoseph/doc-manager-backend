@@ -103,6 +103,24 @@ export class ReceivablesDto {
   overdueCount: number;
 }
 
+/** GMF 4x1000 de un mes, desglosado por origen. */
+export class GmfMonthDto {
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, {
+    message: 'month debe tener formato YYYY-MM',
+  })
+  month: string;
+
+  /** GMF generado por egresos: pagos propios desde cuentas bancarias. */
+  @IsNumber()
+  @Min(0)
+  expenses: number;
+
+  /** GMF retenido en ingresos: el cliente lo descuenta del pago recibido. */
+  @IsNumber()
+  @Min(0)
+  income: number;
+}
+
 export class GmfDto {
   @IsBoolean()
   enabled: boolean;
@@ -111,9 +129,17 @@ export class GmfDto {
   @Min(0)
   monthlyExempt: number;
 
+  // GMF de los egresos del mes: es el único que la cuenta exenta puede evitar
   @IsNumber()
   @Min(0)
   estimatedThisMonth: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_MONTHS)
+  @ValidateNested({ each: true })
+  @Type(() => GmfMonthDto)
+  history?: GmfMonthDto[];
 }
 
 export class VehicleFinanceDto {

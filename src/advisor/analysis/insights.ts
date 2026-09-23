@@ -45,6 +45,7 @@ export function buildInsights(
     ...receivablesInsights(m),
     ...liquidityInsights(m),
     ...gmfInsights(gmf),
+    ...gmfIncomeInsights(m),
   ];
 
   if (insights.length === 0) {
@@ -373,10 +374,28 @@ function gmfInsights(gmf: GmfDto | undefined): FinanceInsight[] {
     {
       id: 'gmf-exencion',
       title: 'Aprovecha la exención del 4x1000',
-      detail: `El GMF estimado de este mes es ${cop(gmf.estimatedThisMonth)}. Los retiros de hasta ${cop(gmf.monthlyExempt)} al mes desde una cuenta marcada como exenta no pagan este impuesto: podrías ahorrar hasta ${cop(savings)} mensuales. Valida con tu contador cuál cuenta marcar.`,
+      detail: `El GMF estimado de tus pagos este mes es ${cop(gmf.estimatedThisMonth)}. Los retiros de hasta ${cop(gmf.monthlyExempt)} al mes desde una cuenta marcada como exenta no pagan este impuesto: podrías ahorrar hasta ${cop(savings)} mensuales. Valida con tu contador cuál cuenta marcar.`,
       category: 'impuestos',
       impact: 'bajo',
       estimatedMonthlySavings: savings,
+      relatedVehicleIds: [],
+    },
+  ];
+}
+
+/** GMF que los clientes descuentan de los pagos: la cuenta exenta propia no lo evita. */
+function gmfIncomeInsights(m: FinanceMetrics): FinanceInsight[] {
+  if (!m.gmfFromIncome || m.gmfMonths === 0) return [];
+
+  const monthly = Math.round(m.gmfFromIncome / m.gmfMonths);
+  return [
+    {
+      id: 'gmf-retenido-ingresos',
+      title: 'Tus clientes te descuentan el 4x1000',
+      detail: `En el periodo te descontaron ${cop(m.gmfFromIncome)} de GMF en los pagos recibidos (unos ${cop(monthly)} al mes). El 4x1000 lo causa la cuenta de quien paga, así que el descuento es un acuerdo comercial: negocia que no lo descuenten o inclúyelo en la tarifa del flete.`,
+      category: 'impuestos',
+      impact: 'bajo',
+      estimatedMonthlySavings: monthly,
       relatedVehicleIds: [],
     },
   ];

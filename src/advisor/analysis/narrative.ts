@@ -111,8 +111,15 @@ const TOPICS: Topic[] = [
       'iva',
     ],
     insightPrefixes: ['gmf-'],
-    opening: () =>
-      'Sobre impuestos solo puedo darte una orientación general a partir de tus datos; valida cualquier decisión con tu contador.',
+    opening: (m) => {
+      const disclaimer =
+        'Sobre impuestos solo puedo darte una orientación general a partir de tus datos; valida cualquier decisión con tu contador.';
+      if (m.gmfFromExpenses === null || m.gmfFromIncome === null) {
+        return disclaimer;
+      }
+      const total = m.gmfFromExpenses + m.gmfFromIncome;
+      return `En el periodo el 4x1000 suma ${cop(total)}: ${cop(m.gmfFromExpenses)} generado por tus pagos (egresos) y ${cop(m.gmfFromIncome)} que te descontaron los clientes (ingresos). ${disclaimer}`;
+    },
     tips: [
       'Marca como exenta del 4x1000 la cuenta desde la que haces más retiros (la exención cubre un monto mensual limitado).',
       'Concentra los pagos grandes en esa cuenta para aprovechar el monto exento.',

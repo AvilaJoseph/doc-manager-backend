@@ -41,6 +41,10 @@ export interface FinanceMetrics {
   /** Promedios ponderados de la flota (solo vehículos que facturaron). */
   fleetFuelRatio: number | null;
   fleetMaintenanceRatio: number | null;
+  /** GMF 4x1000 del periodo por origen; null si no se envió gmf.history. */
+  gmfFromExpenses: number | null;
+  gmfFromIncome: number | null;
+  gmfMonths: number;
 }
 
 const ratio = (part: number, total: number) =>
@@ -87,6 +91,7 @@ export function computeMetrics(dto: FinanceAdviceDto): FinanceMetrics {
   const maintenanceTotal =
     categoryTotal(months, 'MANTENIMIENTO') ??
     (vehicles.length ? sum(vehicles.map((v) => v.vehicle.maintenance)) : null);
+  const gmfHistory = dto.gmf?.history;
 
   return {
     monthsCount,
@@ -124,6 +129,9 @@ export function computeMetrics(dto: FinanceAdviceDto): FinanceMetrics {
       billing.length >= 2
         ? ratio(sum(billing.map((v) => v.vehicle.maintenance)), fleetIncome)
         : null,
+    gmfFromExpenses: gmfHistory ? sum(gmfHistory.map((h) => h.expenses)) : null,
+    gmfFromIncome: gmfHistory ? sum(gmfHistory.map((h) => h.income)) : null,
+    gmfMonths: gmfHistory?.length ?? 0,
   };
 }
 

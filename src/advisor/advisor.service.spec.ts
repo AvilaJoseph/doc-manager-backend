@@ -248,6 +248,44 @@ describe('AdvisorService', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('desglosa el GMF de egresos y el retenido en ingresos', () => {
+    const base = example();
+    const result = service.getFinanceAdvice({
+      ...base,
+      question: '¿Cuánto pago de 4x1000?',
+      gmf: {
+        ...base.gmf!,
+        history: [
+          { month: '2026-08', expenses: 28000, income: 36000 },
+          { month: '2026-09', expenses: 31200, income: 50000 },
+        ],
+      },
+    });
+
+    // 86.000 retenidos en 2 meses -> 43.000 al mes
+    expect(
+      result.insights.find((i) => i.id === 'gmf-retenido-ingresos'),
+    ).toMatchObject({
+      category: 'impuestos',
+      estimatedMonthlySavings: 43000,
+    });
+    expect(result.answer).toContain(
+      'En el periodo el 4x1000 suma $145.200: $59.200 generado por tus pagos (egresos) y $86.000 que te descontaron los clientes (ingresos).',
+    );
+  });
+
+  it('no sugiere nada del GMF retenido si los clientes no lo descuentan', () => {
+    const base = example();
+    const { insights } = service.getFinanceAdvice({
+      ...base,
+      gmf: {
+        ...base.gmf!,
+        history: [{ month: '2026-09', expenses: 31200, income: 0 }],
+      },
+    });
+    expect(insights.some((i) => i.id === 'gmf-retenido-ingresos')).toBe(false);
+  });
+
   it('es determinista salvo generatedAt', () => {
     const first = service.getFinanceAdvice(fleet());
     const second = service.getFinanceAdvice(fleet());
