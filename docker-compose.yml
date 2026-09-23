@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: doc_manager_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Opcional: Cliente web para ver la base de datos en el navegador
+  adminer:
+    image: adminer
+    container_name: doc_manager_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
