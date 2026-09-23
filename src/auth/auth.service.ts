@@ -19,11 +19,14 @@ export class AuthService {
 
   async create(createUserDto: CreateUserDto) {
     try {
-      const { password, ...userData } = createUserDto
+      const { email, fullName, password } = createUserDto
 
+      // Campos explícitos: roles, plan y límites nunca se toman del body
       const user = this.userRepository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10)
+        email,
+        fullName,
+        password: bcrypt.hashSync(password, 10),
+        roles: ['user'],
       })
 
       await this.userRepository.save(user);

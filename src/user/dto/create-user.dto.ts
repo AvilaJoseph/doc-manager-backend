@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsArray, Matches, MaxLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, Matches, MaxLength } from 'class-validator';
 
 export class CreateUserDto {
     @IsString()
@@ -18,9 +18,6 @@ export class CreateUserDto {
     @MinLength(1, { message: 'El nombre completo es obligatorio' })
     fullName: string;
 
-    @IsString({ each: true })
-    @IsArray()
-    @IsOptional()
-    roles?: string[];
-
+    // Sin `roles`, `plan` ni `maxVehicles`: el ValidationPipe (forbidNonWhitelisted) rechaza
+    // cualquier intento de asignárselos desde el body del registro.
 }
