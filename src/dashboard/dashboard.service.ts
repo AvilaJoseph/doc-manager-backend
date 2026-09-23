@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
@@ -15,10 +15,12 @@ import {
 } from './interfaces/dashboard-response.interface';
 
 const ALERT_WINDOW_DAYS = 30;
+const DEFAULT_TIME_ZONE = 'America/Bogota';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
   private readonly timeZone: string;
 
   constructor(
@@ -30,7 +32,36 @@ export class DashboardService {
     private readonly docRepository: Repository<VehicleDocument>,
     configService: ConfigService,
   ) {
-    this.timeZone = configService.get<string>('APP_TIMEZONE', 'America/Bogota');
+    this.timeZone = this.resolveTimeZone(
+      configService.get<string>('APP_TIMEZONE'),
+    );
+  }
+
+  /**
+   * El default de ConfigService solo aplica a `undefined`: una variable definida
+   * pero vacía ("") o mal escrita haría que Intl.DateTimeFormat lance RangeError
+   * en cada petición. Se valida una sola vez al arrancar.
+   */
+  private resolveTimeZone(value: string | undefined): string {
+    if (value === undefined) return DEFAULT_TIME_ZONE;
+
+    const timeZone = value.trim();
+    if (!timeZone) {
+      this.logger.warn(
+        `APP_TIMEZONE está definida pero vacía; se usa ${DEFAULT_TIME_ZONE}`,
+      );
+      return DEFAULT_TIME_ZONE;
+    }
+
+    try {
+      new Intl.DateTimeFormat('en-CA', { timeZone });
+      return timeZone;
+    } catch {
+      this.logger.warn(
+        `APP_TIMEZONE="${timeZone}" no es una zona horaria IANA válida; se usa ${DEFAULT_TIME_ZONE}`,
+      );
+      return DEFAULT_TIME_ZONE;
+    }
   }
 
   async getMetricsAndAlerts(user: User): Promise<DashboardResponse> {
