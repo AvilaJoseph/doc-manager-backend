@@ -84,8 +84,13 @@ cp .env.example .env
 | --- | --- |
 | `PORT` | Puerto HTTP de la API (por defecto `3000`) |
 | `APP_TIMEZONE` | Zona horaria IANA para calcular vencimientos (por defecto `America/Bogota`) |
-| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | Conexión a PostgreSQL (también las usa `docker-compose.yml`) |
 | `JWT_SECRET` | Secreto para firmar tokens. Usa uno largo y aleatorio. |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | Conexión a PostgreSQL local (también las usa `docker-compose.yml`) |
+| `DATABASE_URL` | Cadena de conexión completa (Supabase). Si existe, **tiene prioridad** sobre `DB_HOST`…`DB_NAME` |
+| `DB_SSL` | `true` para conectar por SSL (obligatorio en Supabase) |
+| `DB_SSL_CA` | Opcional: certificado CA de Supabase en PEM para verificar el servidor. Sin él, la conexión va cifrada pero no se valida la cadena de certificados |
+| `DB_POOL_MAX` | Conexiones máximas por instancia (por defecto `10`; en Vercel usa `2`) |
+| `DB_SYNCHRONIZE` | `true` crea y actualiza las tablas a partir de las entidades. **Solo en desarrollo** |
 
 ### 2. Base de datos
 
@@ -101,7 +106,54 @@ npm run start:dev           # modo desarrollo con recarga
 # npm run build && npm run start:prod
 ```
 
-En desarrollo, TypeORM sincroniza el esquema automáticamente (`synchronize: true`).
+Con `DB_SYNCHRONIZE=true` (valor de `.env.example` para desarrollo), TypeORM crea las tablas automáticamente.
+
+---
+
+## Despliegue: Vercel + Supabase
+
+La API corre en Vercel como una única función serverless (`api/index.js` → `dist/serverless.js`), que reutiliza la instancia de Nest entre invocaciones. La base de datos es PostgreSQL gestionado en Supabase.
+
+### 1. Crear el esquema en Supabase (una sola vez)
+
+Por seguridad, en producción `synchronize` está desactivado, así que las tablas se crean una vez desde tu máquina:
+
+```bash
+# En tu .env local, temporalmente:
+DATABASE_URL=postgresql://postgres.ultvxcqydtocnjhvqxkq:<PASSWORD>@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+DB_SSL=true
+DB_SYNCHRONIZE=true
+
+npm run start:dev   # cuando arranque sin errores, las tablas ya existen. Detén el servidor y vuelve a comentar esas líneas.
+```
+
+> Para este paso usa el puerto **5432** (pooler en modo sesión), que es más adecuado para cambios de esquema. La API desplegada usa el **6543** (modo transacción), pensado para serverless.
+> Si la contraseña tiene caracteres especiales (`@ : / # ?`), codifícalos en la URL (por ejemplo, `@` → `%40`).
+
+### 2. Variables de entorno en Vercel
+
+En *Project Settings → Environment Variables* (o con `vercel env add`):
+
+| Variable | Valor |
+| --- | --- |
+| `DATABASE_URL` | `postgresql://postgres.ultvxcqydtocnjhvqxkq:<PASSWORD>@aws-0-us-east-1.pooler.supabase.com:6543/postgres` |
+| `DB_SSL` | `true` |
+| `DB_POOL_MAX` | `2` |
+| `JWT_SECRET` | Un secreto nuevo y aleatorio, distinto al de desarrollo |
+| `APP_TIMEZONE` | `America/Bogota` |
+
+**No** definas `DB_SYNCHRONIZE` en Vercel.
+
+### 3. Desplegar
+
+Conecta el repositorio en Vercel (cada push a la rama principal despliega) o usa la CLI:
+
+```bash
+vercel link
+vercel deploy --prod
+```
+
+`vercel.json` ya define la compilación (`npm run build`), la función en la región `iad1` (EE. UU. Este, junto a Supabase `us-east-1`), una duración máxima de 30 s y que todas las rutas se atiendan con la API. Los archivos `.env` quedan fuera del paquete (`excludeFiles` y `.vercelignore`).
 
 ---
 

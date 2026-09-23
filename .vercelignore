@@ -1,0 +1,6 @@
+# Nunca subir secretos locales en `vercel deploy` (las variables van en el panel de Vercel)
+.env
+.env.*
+!.env.example
+dist
+node_modules
