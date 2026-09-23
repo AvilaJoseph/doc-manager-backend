@@ -11,7 +11,9 @@ type ExpressHandler = (req: Request, res: Response) => void;
 let cachedServer: Promise<ExpressHandler> | undefined;
 
 async function bootstrapServer(): Promise<ExpressHandler> {
-  const app = await NestFactory.create(AppModule);
+  // abortOnError: false => un fallo de arranque se lanza como error (visible en los
+  // logs de Vercel) en lugar de terminar el proceso con process.abort()
+  const app = await NestFactory.create(AppModule, { abortOnError: false });
   configureApp(app);
   await app.init();
   return app.getHttpAdapter().getInstance() as ExpressHandler;
@@ -19,6 +21,7 @@ async function bootstrapServer(): Promise<ExpressHandler> {
 
 export default async function handler(req: Request, res: Response) {
   cachedServer ??= bootstrapServer().catch((error: unknown) => {
+    console.error('[serverless] Error al iniciar la aplicación Nest:', error);
     // Si el arranque falla (p. ej. BD caída) la siguiente invocación lo reintenta
     cachedServer = undefined;
     throw error;
