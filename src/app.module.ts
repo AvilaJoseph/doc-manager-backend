@@ -10,6 +10,7 @@ import { VehicleModule } from './vehicle/vehicle.module';
 import { DriverModule } from './driver/driver.module';
 import { VehicledocumentModule } from './vehicledocument/vehicledocument.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdvisorModule } from './advisor/advisor.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     DriverModule,
     VehicledocumentModule,
     DashboardModule,
+    AdvisorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
