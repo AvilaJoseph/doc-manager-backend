@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -149,10 +149,14 @@ export class VehicleFinanceDto {
 }
 
 export class FinanceAdviceDto {
+  // Opcional: sin pregunta se entrega solo el diagnóstico. "" o solo espacios = sin pregunta.
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(1000)
-  question: string;
+  @MaxLength(500)
+  question?: string;
 
   @ValidateNested()
   @Type(() => PeriodDto)

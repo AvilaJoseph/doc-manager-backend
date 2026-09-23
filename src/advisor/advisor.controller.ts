@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-import { AdvisorService, FinanceAdviceResponse } from './advisor.service';
+import { AdvisorService } from './advisor.service';
 import { FinanceAdviceDto } from './dto/finance-advice.dto';
+import { FinanceAdviceResponse } from './interfaces/finance-advice-response.interface';
 
 @Controller('advisor')
 @UseGuards(AuthGuard('jwt'))
