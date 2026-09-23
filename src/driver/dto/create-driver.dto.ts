@@ -34,5 +34,5 @@ export class CreateDriverDto {
 
     @IsUUID()
     @IsOptional()
-    assignedVehicleId?: string;
+    assignedVehicleId?: string | null;
 }

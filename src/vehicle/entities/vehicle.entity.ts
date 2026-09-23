@@ -36,7 +36,7 @@ export class Vehicle {
 
     @OneToOne(() => Driver, (driver) => driver.assignedVehicle, { nullable: true })
     @JoinColumn({ name: 'driver_id' })
-    assignedDriver?: Driver;
+    assignedDriver?: Driver | null;
 
     @OneToMany(() => VehicleDocument, (document) => document.vehicle)
     documents?: VehicleDocument[];
