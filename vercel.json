@@ -8,7 +8,7 @@
     "api/index.js": {
       "includeFiles": "dist/**",
       "excludeFiles": "{.env,.env.*}",
-      "maxDuration": 60
+      "maxDuration": 30
     }
   },
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]

@@ -33,6 +33,6 @@ export interface FinanceAdviceResponse {
   answer: string | null;
   /** ISO 8601, generado por el servidor. */
   generatedAt: string;
-  /** Modelo que generó la respuesta (puede ser el de respaldo si el principal declinó). */
+  /** Versión del motor de reglas que generó el diagnóstico (p. ej. "familytruck-reglas-v1"). */
   model: string;
 }

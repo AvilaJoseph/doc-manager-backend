@@ -20,9 +20,7 @@ export class AdvisorController {
   // 200 y no 201: es una consulta, no crea ningún recurso
   @Post('finance')
   @HttpCode(HttpStatus.OK)
-  getFinanceAdvice(
-    @Body() dto: FinanceAdviceDto,
-  ): Promise<FinanceAdviceResponse> {
+  getFinanceAdvice(@Body() dto: FinanceAdviceDto): FinanceAdviceResponse {
     return this.advisorService.getFinanceAdvice(dto);
   }
 }
