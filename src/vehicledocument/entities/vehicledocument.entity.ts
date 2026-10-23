@@ -42,6 +42,11 @@ export class VehicleDocument {
     @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
     cost: number;
 
+    // Nullable para no romper los registros existentes. Sin DB_SYNCHRONIZE, crear la columna con:
+    // ALTER TABLE vehicle_documents ADD COLUMN IF NOT EXISTS "fileUrl" varchar(500);
+    @Column({ type: 'varchar', length: 500, nullable: true })
+    fileUrl: string | null;
+
     @Column({ type: 'boolean', default: true })
     isActive: boolean;
 
