@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, MaxLength, Min } from 'class-validator';
 import { DocumentType } from '../entities/vehicledocument.entity';
 
 export class CreateVehicleDocumentDto {
@@ -22,6 +22,12 @@ export class CreateVehicleDocumentDto {
     @Min(0)
     @IsOptional()
     cost?: number;
+
+    // Enlace al soporte (PDF en Drive, OneDrive...). Solo http(s)
+    @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+    @MaxLength(500)
+    @IsOptional()
+    fileUrl?: string;
 
     @IsUUID()
     @IsNotEmpty()
