@@ -25,6 +25,7 @@ Para empresas transportadoras, propietarios de uno o varios camiones y flotas fa
 | **Conductores** | Hoja de vida del conductor: tipo y número de documento (CC, CE, pasaporte), teléfono, licencia y fecha de vencimiento. |
 | **Documentos del vehículo** | SOAT, tecnomecánica, seguro de responsabilidad, póliza todo riesgo y otros, con fechas de expedición y vencimiento y costo. |
 | **Dashboard de alertas** | Un solo endpoint con métricas de la flota y alertas de documentos y licencias **vencidos o que vencen en los próximos 30 días**, ordenados por urgencia. |
+| **Notificaciones** | Notificaciones guardadas de vencimientos con estado leída/no leída, compartidas entre la web y las apps móviles, y registro de tokens push de dispositivos. |
 
 ### Planes
 
@@ -54,7 +55,8 @@ src/
 ├── vehicle/           # CRUD de vehículos
 ├── driver/            # CRUD de conductores (1:1 con vehículo)
 ├── vehicledocument/   # Documentos por vehículo (1:N)
-└── dashboard/         # Métricas y alertas agregadas (sin tablas propias)
+├── dashboard/         # Métricas y alertas agregadas (sin tablas propias)
+└── notification/      # Notificaciones (web y móvil) y tokens push de dispositivos
 ```
 
 ### Multi-tenant y seguridad
@@ -244,6 +246,23 @@ Devuelve las métricas de la flota y las alertas de vencimiento de los próximos
 }
 ```
 
+### Notificaciones — `/notifications`
+
+Cada vez que un cliente consulta, la API sincroniza las notificaciones con las alertas actuales (no hace falta un cron): crea una por cada documento o licencia que entra en un nivel (`UPCOMING` ≤ 30 días, `WARNING` ≤ 15, `CRITICAL` ≤ 5, `EXPIRED`) y marca como resueltas (`isResolved`) las de documentos renovados, eliminados o que pasaron a un nivel más grave. El estado de leída se guarda en el servidor, así que la web y la app móvil ven lo mismo.
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `GET` | `/notifications?unreadOnly=true&limit=30` | Lista (pendientes primero) y `unreadCount` |
+| `GET` | `/notifications/unread-count` | Solo el número del globo de la campana |
+| `PATCH` | `/notifications/:id/read` | Marca una como leída |
+| `PATCH` | `/notifications/read-all` | Marca todas como leídas |
+| `POST` | `/notifications/devices` | Registra el token push del dispositivo: `{ "token": "...", "platform": "android" \| "ios" \| "web" }` |
+| `DELETE` | `/notifications/devices/:token` | Quita el token al cerrar sesión en el dispositivo |
+
+`data` trae los ids del origen (`idVehicleDocument`, `idVehicle`, `idDriver`, `expirationDate`) para que cada cliente abra la pantalla correcta; `link` es la ruta de la web.
+
+> Las tablas `notifications` y `device_tokens` se crean en producción con [`docs/notificaciones.sql`](docs/notificaciones.sql) (Supabase > SQL Editor).
+
 ### Ejemplo rápido con cURL
 
 ```bash
@@ -274,7 +293,8 @@ curl -s localhost:3000/dashboard/alerts -H "Authorization: Bearer $TOKEN" | jq
 - [ ] Quitar `roles` del DTO de registro y hacer que el login no revele si un correo existe.
 - [ ] Retirar los endpoints de ejemplo (`/user`, `/auth/private2`).
 - [ ] Migraciones de TypeORM en lugar de `synchronize` para producción.
-- [ ] Notificaciones automáticas (correo / WhatsApp) de vencimientos.
+- [ ] Envío push a la app móvil: un cron (Vercel Cron) que sincronice a todos los usuarios y envíe por FCM las notificaciones con `pushedAt` vacío a sus `device_tokens`.
+- [ ] Notificaciones por correo / WhatsApp de vencimientos.
 - [ ] Edición de documentos del vehículo (`PATCH /vehicle-document/:id`).
 
 ---
