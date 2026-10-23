@@ -8,6 +8,12 @@ import { Driver } from 'src/driver/entities/driver.entity';
 import { VehicleDocument } from 'src/vehicledocument/entities/vehicledocument.entity';
 import { User } from 'src/user/entities/user.entity';
 import {
+  addDays,
+  diffInDays,
+  resolveTimeZone,
+  todayDateString,
+} from 'src/common/business-date';
+import {
   DashboardResponse,
   DriverLicenseAlert,
   VehicleDocumentAlert,
@@ -15,8 +21,6 @@ import {
 } from './interfaces/dashboard-response.interface';
 
 const ALERT_WINDOW_DAYS = 30;
-const DEFAULT_TIME_ZONE = 'America/Bogota';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class DashboardService {
@@ -32,41 +36,15 @@ export class DashboardService {
     private readonly docRepository: Repository<VehicleDocument>,
     configService: ConfigService,
   ) {
-    this.timeZone = this.resolveTimeZone(
+    this.timeZone = resolveTimeZone(
       configService.get<string>('APP_TIMEZONE'),
+      this.logger,
     );
   }
 
-  /**
-   * El default de ConfigService solo aplica a `undefined`: una variable definida
-   * pero vacía ("") o mal escrita haría que Intl.DateTimeFormat lance RangeError
-   * en cada petición. Se valida una sola vez al arrancar.
-   */
-  private resolveTimeZone(value: string | undefined): string {
-    if (value === undefined) return DEFAULT_TIME_ZONE;
-
-    const timeZone = value.trim();
-    if (!timeZone) {
-      this.logger.warn(
-        `APP_TIMEZONE está definida pero vacía; se usa ${DEFAULT_TIME_ZONE}`,
-      );
-      return DEFAULT_TIME_ZONE;
-    }
-
-    try {
-      new Intl.DateTimeFormat('en-CA', { timeZone });
-      return timeZone;
-    } catch {
-      this.logger.warn(
-        `APP_TIMEZONE="${timeZone}" no es una zona horaria IANA válida; se usa ${DEFAULT_TIME_ZONE}`,
-      );
-      return DEFAULT_TIME_ZONE;
-    }
-  }
-
   async getMetricsAndAlerts(user: User): Promise<DashboardResponse> {
-    const today = this.todayDateString();
-    const limitDate = this.addDays(today, ALERT_WINDOW_DAYS);
+    const today = todayDateString(this.timeZone);
+    const limitDate = addDays(today, ALERT_WINDOW_DAYS);
 
     // Las cuatro consultas son independientes: se ejecutan en paralelo.
     // Todas filtran explícitamente por user.id (aislamiento multi-tenant).
@@ -124,7 +102,7 @@ export class DashboardService {
       ]);
 
     const vehicleDocuments: VehicleDocumentAlert[] = documents.map((doc) => {
-      const daysRemaining = this.diffInDays(doc.expirationDate, today);
+      const daysRemaining = diffInDays(doc.expirationDate, today);
       return {
         idVehicleDocument: doc.idVehicleDocument,
         type: doc.type,
@@ -137,10 +115,7 @@ export class DashboardService {
     });
 
     const driverLicenses: DriverLicenseAlert[] = drivers.map((driver) => {
-      const daysRemaining = this.diffInDays(
-        driver.licenseExpirationDate,
-        today,
-      );
+      const daysRemaining = diffInDays(driver.licenseExpirationDate, today);
       const vehicle = driver.assignedVehicle;
       return {
         idDriver: driver.idDriver,
@@ -179,31 +154,5 @@ export class DashboardService {
       licensePlate: vehicle.licensePlate,
       internalCode: vehicle.internalCode ?? null,
     };
-  }
-
-  /** Fecha de hoy (YYYY-MM-DD) en la zona horaria del negocio, no la del servidor. */
-  private todayDateString(): string {
-    // 'en-CA' formatea como YYYY-MM-DD
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: this.timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-  }
-
-  private addDays(date: string, days: number): string {
-    const [year, month, day] = date.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day + days))
-      .toISOString()
-      .slice(0, 10);
-  }
-
-  /** Días de calendario entre dos fechas YYYY-MM-DD (to - from). */
-  private diffInDays(to: string, from: string): number {
-    return Math.round(
-      (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
-        MS_PER_DAY,
-    );
   }
 }

@@ -11,6 +11,7 @@ import { DriverModule } from './driver/driver.module';
 import { VehicledocumentModule } from './vehicledocument/vehicledocument.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdvisorModule } from './advisor/advisor.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { AdvisorModule } from './advisor/advisor.module';
     VehicledocumentModule,
     DashboardModule,
     AdvisorModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
