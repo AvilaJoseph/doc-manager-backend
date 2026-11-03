@@ -1,6 +1,6 @@
 # Mantiene activa la base de datos de Supabase (plan gratuito).
 # Supabase pausa los proyectos gratuitos tras 7 días sin actividad; este
-# workflow hace una consulta mínima cada 3 días para evitarlo.
+# workflow hace una consulta mínima cada 5 días para evitarlo.
 #
 # Requiere el secret DATABASE_URL del repositorio (Settings > Secrets and
 # variables > Actions), con la misma cadena de conexión que usa Vercel.
@@ -8,8 +8,9 @@ name: Supabase keep-alive
 
 on:
   schedule:
-    # 12:00 UTC los días 1, 4, 7, ... de cada mes (como máximo 3 días entre ejecuciones)
-    - cron: '0 12 */3 * *'
+    # 12:00 UTC los días 1, 6, 11, 16, 21, 26 y 31 de cada mes. Al cambiar de mes
+    # el ciclo se reinicia el día 1, así que nunca pasan más de 5 días entre ejecuciones.
+    - cron: '0 12 */5 * *'
   workflow_dispatch:
 
 jobs:
