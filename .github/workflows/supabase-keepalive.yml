@@ -28,4 +28,5 @@ jobs:
             echo "::error::Falta el secret DATABASE_URL en Settings > Secrets and variables > Actions"
             exit 1
           fi
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -tAc "SELECT now();"
+          # Lee una tabla real para que Supabase lo registre como actividad del proyecto
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -tAc "SELECT count(*) FROM vehicles;"
