@@ -1,0 +1,32 @@
+# Mantiene activa la base de datos de Supabase (plan gratuito).
+# Supabase pausa los proyectos gratuitos tras 7 días sin actividad; este
+# workflow hace una consulta mínima cada 5 días para evitarlo.
+#
+# Requiere el secret DATABASE_URL del repositorio (Settings > Secrets and
+# variables > Actions), con la misma cadena de conexión que usa Vercel.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # 12:00 UTC los días 1, 6, 11, 16, 21, 26 y 31 de cada mes. Al cambiar de mes
+    # el ciclo se reinicia el día 1, así que nunca pasan más de 5 días entre ejecuciones.
+    - cron: '0 12 */5 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar la base de datos
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGSSLMODE: require
+          PGCONNECT_TIMEOUT: '30'
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta el secret DATABASE_URL en Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          # Lee una tabla real para que Supabase lo registre como actividad del proyecto
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -tAc "SELECT count(*) FROM vehicles;"
